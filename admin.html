@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ludo Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{
+  font-family: Arial;
+  background:#0f2027;
+  color:white;
+  margin:0;
+}
+.container{
+  max-width:400px;
+  margin:40px auto;
+  background:#203a43;
+  padding:20px;
+  border-radius:12px;
+}
+input,button{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+}
+button{
+  background:#FFD700;
+  font-weight:bold;
+}
+.card{
+  background:#2c5364;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:8px;
+}
+.action{
+  display:flex;
+  gap:10px;
+}
+.action button{
+  flex:1;
+}
+.approve{background:#2e7d32;color:white;}
+.reject{background:#c62828;color:white;}
+</style>
+</head>
+<body>
+
+<div class="container" id="login-box">
+  <h2>Admin Login</h2>
+  <input id="admin-user" placeholder="Username">
+  <input id="admin-pass" type="password" placeholder="Password">
+  <button onclick="adminLogin()">Login</button>
+</div>
+
+<div class="container" id="admin-panel" style="display:none">
+  <h2>Deposit Requests</h2>
+  <div id="deposit-list"></div>
+
+  <h2>Withdraw Requests</h2>
+  <div id="withdraw-list"></div>
+</div>
+
+<script>
+const API = "https://ludo-backend-uiyo.onrender.com";
+
+function adminLogin(){
+  fetch(API+"/api/admin/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      username: admin-user.value,
+      password: admin-pass.value
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.success) return alert("Login failed");
+    localStorage.setItem("admin_token", d.token);
+    login-box.style.display="none";
+    admin-panel.style.display="block";
+    loadRequests();
+  });
+}
+
+function loadRequests(){
+  fetch(API+"/api/admin/requests",{
+    headers:{
+      "Authorization":"Bearer "+localStorage.getItem("admin_token")
+    }
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    render(d.deposits, deposit-list, "deposit");
+    render(d.withdraws, withdraw-list, "withdraw");
+  });
+}
+
+function render(list, el, type){
+  el.innerHTML="";
+  list.forEach(r=>{
+    el.innerHTML+=`
+      <div class="card">
+        <b>${r.mobile}</b><br>
+        ৳ ${r.amount}
+        <div class="action">
+          <button class="approve" onclick="approve('${r._id}','${type}')">Approve</button>
+          <button class="reject" onclick="rejectReq('${r._id}','${type}')">Reject</button>
+        </div>
+      </div>`;
+  });
+}
+
+function approve(id,type){
+  fetch(API+"/api/admin/approve",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer "+localStorage.getItem("admin_token")
+    },
+    body:JSON.stringify({id,type})
+  }).then(()=>loadRequests());
+}
+
+function rejectReq(id,type){
+  fetch(API+"/api/admin/reject",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer "+localStorage.getItem("admin_token")
+    },
+    body:JSON.stringify({id,type})
+  }).then(()=>loadRequests());
+}
+</script>
+
+</body>
+</html>
